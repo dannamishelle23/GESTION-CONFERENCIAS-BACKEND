@@ -1,20 +1,20 @@
-import Cliente from '../models/Conferencista.js';
+import Conferencista from '../models/Conferencista.js';
 import Usuarios from '../models/Usuarios.js';
 import mongoose from 'mongoose';
 import {sendMailToNewClient} from '../helpers/sendMail.js';
 
-//CRUD de clientes por medio de un usuario
+//CRUD de conferencistas por medio de un usuario
 
-//1. CREAR CLIENTES
-const crearCliente = async(req,res) => {
+//1. CREAR CONFERENCISTAS
+const crearConferencistas = async(req,res) => {
     try {
-        const {nombre, apellido, email, cedula, fecha_nacimiento, ciudad, direccion, telefono} = req.body
+        const {nombre, apellido, email, cedula, genero, fecha_nacimiento, ciudad, direccion, telefono} = req.body
         if (Object.values(req.body).includes("")) return res.status(400).json({message: "Todos los campos son obligatorios."})
         if (cedula.length < 7 || cedula.length > 10) return res.status(400).json({message: "La cédula debe tener entre 7 y 10 dígitos."})
         //1. Verificar si el email y la cédula existen en la BDD
         const [emailExistente, cedulaExistente] = await Promise.all([
             Usuarios.findOne({ email }),
-            Estudiante.findOne({ cedula })
+            Conferencista.findOne({ cedula })
         ]);
 
         if (emailExistente || cedulaExistente) {
@@ -25,9 +25,9 @@ const crearCliente = async(req,res) => {
         //2. Generar contraseña aleatoria corta
         const passwordGenerada = Math.random().toString(36).slice(2, 10);
         
-        //3. Crear usuario con rol 'Cliente'
+        //3. Crear usuario con rol 'Conferencista'
         const nuevoUsuario = new Usuarios({
-            nombre,apellido, email, password: passwordGenerada, rol: "Cliente"
+            nombre,apellido, email, password: passwordGenerada, rol: "Conferencista"
         });
         nuevoUsuario.password = await nuevoUsuario.encryptPassword(passwordGenerada)
         
@@ -44,9 +44,10 @@ const crearCliente = async(req,res) => {
             throw errorGuardar
         }
         
-        //4. Crear estudiante asociado al usuario creado
-        const nuevoCliente = new Cliente({
+        //4. Crear conferencista asociado al usuario creado
+        const nuevoConferencista = new Conferencista({
             cedula,
+            genero,
             fecha_nacimiento,
             ciudad,
             direccion,
@@ -56,30 +57,30 @@ const crearCliente = async(req,res) => {
         })
         
         try {
-            await nuevoCliente.save()
-        } catch (errorEstudiante) {
-            // Si hay error al guardar estudiante (ej: cédula duplicada), eliminar el usuario creado
+            await nuevoConferencista.save()
+        } catch (errorConferencista) {
+            // Si hay error al guardar conferencista (ej: cédula duplicada), eliminar el usuario creado
             await Usuarios.findByIdAndDelete(usuarioGuardado._id)
-            if (errorEstudiante.code === 11000) {
+            if (errorConferencista.code === 11000) {
                 return res.status(400).json({
                     message: "La cédula ya se encuentra registrada en el sistema."
                 })
             }
-            throw errorEstudiante
+            throw errorConferencista
         }
         
         //5. Enviar correo con credenciales (sin bloquear la respuesta)
-        sendMailToNewClient(email, nombre, email, passwordGenerada).catch(err => {
-            console.error("Error al enviar email al cliente:", err)
+        sendMailToNewConferencista(email, nombre, email, passwordGenerada).catch(err => {
+            console.error("Error al enviar email al conferencista:", err)
         })
         
         res.status(201).json({
-            message: "El estudiante ha sido creado con éxito.",
+            message: "El conferencista ha sido creado con éxito.",
             credenciales: {
-                idEstudiante: nuevoEstudiante._id,
+                idConferencista: nuevoConferencista._id,
                 email: email,
                 password: passwordGenerada,
-                aviso: "Las credenciales han sido enviadas al correo del estudiante."
+                aviso: "Las credenciales han sido enviadas al correo del conferencista."
             }
         })
     } catch (error) {
@@ -88,12 +89,12 @@ const crearCliente = async(req,res) => {
     }
 }
 
-//2. Ver/listar clientes.
-const listarClientes = async (req, res) => {
+//2. Ver/listar conferencistas.
+const listarConferencistas = async (req, res) => {
     try {
 
-        const clientes = await Cliente.find({
-            estadoCliente: "Activo",
+        const conferencistas = await Conferencista.find({
+            estadoConferencista: "Activo",
             creadoPor: req.usuarioHeader._id
         })
         .populate("usuario", "nombre apellido email rol")
@@ -104,12 +105,13 @@ const listarClientes = async (req, res) => {
             nombre: est.usuario?.nombre,
             apellido: est.usuario?.apellido,
             cedula: est.cedula,
+            genero: est.genero,
             fecha_nacimiento: est.fecha_nacimiento,
             direccion: est.ciudad, 
             telefono: est.telefono,
             email: est.usuario?.email,
             rol: est.usuario?.rol,
-            estadoEstudiante: est.estadoEstudiante,
+            estadoConferencista: est.estadoConferencista,
             creadoPor: {
                 nombre: est.creadoPor?.nombre,
                 apellido: est.creadoPor?.apellido,
@@ -129,40 +131,41 @@ const listarClientes = async (req, res) => {
 };
 
 //Visualizar el detalle de un registro en particular
-const detalleCliente = async (req, res) => {
+const detalleConferencista = async (req, res) => {
     try {
 
         const { id } = req.params;
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(404).json({ 
-                msg: `No existe el cliente ${id}` 
+                msg: `No existe el conferencista ${id}` 
             });
         }
 
-        const cliente = await Cliente.findById(id)
+        const conferencista = await Conferencista.findById(id)
             .populate("usuario", "nombre apellido email rol")
             .populate("creadoPor", "nombre apellido email rol");
 
-        if (!cliente) {
+        if (!conferencista) {
             return res.status(404).json({
-                msg: "Cliente no encontrado"
+                msg: "Conferencista no encontrado"
             });
         }
 
         //Formatear la respuesta
         const resultado = {
-            _id: cliente._id,
-            nombre: cliente.usuario?.nombre,
-            apellido: cliente.usuario?.apellido,
-            cedula: cliente.cedula,
-            fecha_nacimiento: cliente.fecha_nacimiento,
-            direccion: cliente.direccion,
-            ciudad: cliente.ciudad,
-            telefono: cliente.telefono,
-            email: cliente.usuario?.email,
-            rol: cliente.usuario?.rol,
-            estadoCliente: cliente.estadoCliente,
+            _id: conferencista._id,
+            nombre: conferencista.usuario?.nombre,
+            apellido: conferencista.usuario?.apellido,
+            cedula: conferencista.cedula,
+            genero: conferencista.genero,
+            fecha_nacimiento: conferencista.fecha_nacimiento,
+            direccion: conferencista.direccion,
+            ciudad: conferencista.ciudad,
+            telefono: conferencista.telefono,
+            email: conferencista.usuario?.email,
+            rol: conferencista.usuario?.rol,
+            estadoConferencista: conferencista.estadoConferencista,
             creadoPor: {
                 id: cliente.creadoPor?._id,
                 nombre: cliente.creadoPor?.nombre,
@@ -182,8 +185,8 @@ const detalleCliente = async (req, res) => {
     }
 };
 
-//3. Actualizar la información de un cliente 
-const actualizarCliente = async (req, res) => {
+//3. Actualizar la información de un conferencista por ID (solo campos específicos)
+const actualizarConferencista = async (req, res) => {
     try {
 
         const { id } = req.params;
@@ -191,24 +194,24 @@ const actualizarCliente = async (req, res) => {
         //Verificar que el usuario exista en la BDD
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(404).json({
-                msg: `No existe el estudiante ${id}`
+                msg: `No existe el conferencista ${id}`
             });
         }
 
-        const estudiante = await Estudiante.findById(id);
+        const conferencista = await Conferencista.findById(id);
 
-        if (!estudiante) {
+        if (!conferencista) {
             return res.status(404).json({
-                msg: "Estudiante no encontrado"
+                msg: "Conferencista no encontrado"
             });
         }
 
-        // Campos permitidos del estudiante
-        const {nombre,apellido,cedula,ciudad,direccion, telefono, estadoEstudiante,email} = req.body;
+        // Campos permitidos del conferencista
+        const {nombre, apellido,cedula,ciudad,direccion, telefono, estadoConferencista, email} = req.body;
 
         // Validar cédula duplicada si se intenta cambiar
-        if (cedula && cedula !== estudiante.cedula) {
-            const cedulaDuplicada = await Estudiante.findOne({ cedula, _id: { $ne: id } });
+        if (cedula && cedula !== conferencista.cedula) {
+            const cedulaDuplicada = await Conferencista.findOne({ cedula, _id: { $ne: id } });
             if (cedulaDuplicada) {
                 return res.status(400).json({
                     msg: "La cédula ya está registrada en el sistema."
@@ -218,7 +221,7 @@ const actualizarCliente = async (req, res) => {
 
         // Validar email duplicado si se intenta cambiar
         if (email) {
-            const emailDuplicado = await Usuarios.findOne({ email, _id: { $ne: estudiante.usuario } });
+            const emailDuplicado = await Usuarios.findOne({ email, _id: { $ne: conferencista.usuario } });
             if (emailDuplicado) {
                 return res.status(400).json({
                     msg: "El email ya está registrado en el sistema."
@@ -227,18 +230,18 @@ const actualizarCliente = async (req, res) => {
         }
 
         // Actualizar datos del estudiante
-        if (cedula) estudiante.cedula = cedula;
-        if (ciudad) estudiante.ciudad = ciudad;
-        if (direccion) estudiante.direccion = direccion;
-        if (telefono) estudiante.telefono = telefono;
-        if (estadoEstudiante) estudiante.estadoEstudiante = estadoEstudiante;
+        if (cedula) conferencista.cedula = cedula;
+        if (ciudad) conferencista.ciudad = ciudad;
+        if (direccion) conferencista.direccion = direccion;
+        if (telefono) conferencista.telefono = telefono;
+        if (estadoConferencista) conferencista.estadoConferencista = estadoConferencista;
 
-        await estudiante.save();
+        await conferencista.save();
 
         // Actualizar datos del usuario relacionado
         if (nombre || apellido || email) {
             await Usuarios.findByIdAndUpdate(
-                estudiante.usuario,
+                conferencista.usuario,
                 {
                     ...(nombre && { nombre }),
                     ...(apellido && { apellido }),
@@ -249,7 +252,7 @@ const actualizarCliente = async (req, res) => {
         }
 
         res.status(200).json({
-            msg: "Datos del estudiante actualizados correctamente"
+            msg: "Datos del conferencista actualizados correctamente"
         });
 
     } catch (error) {
@@ -260,27 +263,27 @@ const actualizarCliente = async (req, res) => {
     }
 };
 
-//Eliminar cliente (solo eliminacion lógica, estado inactivo)
-const eliminarCliente = async (req,res)=>{
+//Eliminar conferencista (solo eliminacion lógica, cambiar a estado inactivo)
+const eliminarConferencista = async (req,res)=>{
 
     try {
         const {id} = req.params
-        const {fechaEliminacionCliente} = req.body
+        const {fechaEliminacionConferencista} = req.body
         if (Object.values(req.body).includes("")) return res.status(400).json({msg:"Debes llenar todos los campos"})
-        if( !mongoose.Types.ObjectId.isValid(id) ) return res.status(404).json({msg:`No existe el cliente ${id}`})
-        await Cliente.findByIdAndUpdate(id,{fechaEliminacionCliente:Date.parse(fechaEliminacionCliente),estadoCliente:false})
-        res.status(200).json({msg:"El cliente ha sido deshabilitado con éxito."})
+        if( !mongoose.Types.ObjectId.isValid(id) ) return res.status(404).json({msg:`No existe el conferencista ${id}`})
+        await Conferencista.findByIdAndUpdate(id,{fechaEliminacionConferencista:Date.parse(fechaEliminacionConferencista),estadoConferencista:false})
+        res.status(200).json({msg:"El conferencista ha sido deshabilitado con éxito."})
 
     } catch (error) {
         console.error(error)
-        res.status(500).json({ msg: `Error al deshabilitar la cuenta del cliente - ${error}` })
+        res.status(500).json({ msg: `Error al deshabilitar la cuenta del conferencista - ${error}` })
     }
 }
 
 export {
-    crearCliente,
-    listarClientes,
-    detalleCliente,
-    actualizarCliente,
-    eliminarCliente
+    crearConferencistas,
+    listarConferencistas,
+    detalleConferencista,
+    actualizarConferencista,
+    eliminarConferencista
 }

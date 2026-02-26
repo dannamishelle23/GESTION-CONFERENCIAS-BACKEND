@@ -88,21 +88,10 @@ const autorizarAdminOConferencista = (req, res, next) => {
   next()
 }
 
-// Middleware para que Admin y Conferencista puedan leer auditorios, solo el admin puede modificar
-const autorizarAdminOConferencistaLectura = (req, res, next) => {
-  if (req.usuarioHeader.rol !== "Admin" && req.usuarioHeader.rol !== "Conferencista") {
-    return res.status(403).json({
-      message: "Acceso denegado. Debes tener un rol válido para consultar auditorios."
-    })
-  }
-  next()
-}
-
 export {
     crearTokenJWT,
     verificarTokenJWT,
     autorizarAdmin,
     autorizarConferencista,
     autorizarAdminOConferencista,
-    autorizarAdminOConferencistaLectura
 }

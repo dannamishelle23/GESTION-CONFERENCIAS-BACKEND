@@ -1,19 +1,19 @@
 import {Router} from 'express';
-import { crearCliente, listarClientes, detalleCliente, actualizarCliente, eliminarCliente } from '../controllers/conferencista_controller.js';
+import { crearConferencistas, listarConferencistas, detalleConferencista, eliminarConferencista, actualizarConferencista,  } from '../controllers/conferencista_controller.js';
 import { verificarTokenJWT, autorizarAdmin } from '../middlewares/JWT.js';
 
 const router = Router();
 
-//CRUD de clientes por medio de un usuario (administrador)
-//1. CREAR CLIENTES
-router.post('/clientes/crear-cliente', verificarTokenJWT, autorizarAdmin, crearCliente)
-//2. VER/LISTAR CLIENTES
-router.get('/clientes/listar-clientes', verificarTokenJWT, autorizarAdmin, listarClientes)
-//Ver el registro de un cliente
-router.get('/clientes/detalle-cliente/:id', verificarTokenJWT, autorizarAdmin, detalleCliente)
-//3. ACTUALIZAR INFO CLIENTES
-router.put('/clientes/actualizar-cliente/:id', verificarTokenJWT, autorizarAdmin, actualizarCliente)
-//4. ELIMINAR CLIENTES (ESTADO INACTIVO)
-router.delete('/clientes/eliminar-cliente/:id', verificarTokenJWT, autorizarAdmin, eliminarCliente)
+//CRUD de conferencistas por medio de un usuario (administrador)
+//1. CREAR CONFERENCISTAS
+router.post('/conferencistas/crear-conferencista', verificarTokenJWT, autorizarAdmin, crearConferencistas)
+//2. VER/LISTAR CONFERENCISTAS
+router.get('/conferencistas/listar-conferencistas', verificarTokenJWT, autorizarAdmin, listarConferencistas)
+//Ver la info especifica de un conferencista
+router.get('/conferencistas/detalle-conferencista/:id', verificarTokenJWT, autorizarAdmin, detalleConferencista)
+//3. ACTUALIZAR INFO CONFERENCISTAS
+router.put('/conferencistas/actualizar-conferencista/:id', verificarTokenJWT, autorizarAdmin, actualizarConferencista)
+//4. ELIMINAR CONFERENCISTAS (ESTADO INACTIVO)
+router.delete('/conferencistas/eliminar-conferencista/:id', verificarTokenJWT, autorizarAdmin, eliminarConferencista)
 
 export default router;

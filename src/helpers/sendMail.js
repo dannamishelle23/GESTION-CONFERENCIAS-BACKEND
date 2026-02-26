@@ -6,24 +6,24 @@ const sendMailToRecoveryPassword = (userMail, token) => {
         userMail,
         "Recupera tu contraseña",
         `
-            <h1>RENT CAR</h1>
-            <p>Has solicitado restablecer tu contraseña.</p>
+            <h1>GESTION CONFERENCIAS :)</h1>
+            <p>Te enviamos un correo porque has solicitado restablecer tu contraseña.</p>
             <a href="${process.env.URL_BACKEND}recuperarpassword/${token}">
-            Clic para restablecer tu contraseña
+            Haz clic aquí para restablecer tu contraseña
             </a>
             <hr>
-            <footer>RENT CAR 2026. Todos los derechos reservados.</footer>
+            <footer>2026. Todos los derechos reservados.</footer>
         `
         )
 }
 
-const sendMailToNewClient = (userMail, nombre, email, password) => {
+const sendMailToNewConferencista = (userMail, nombre, email, password) => {
 
     return sendMail(
         userMail,
-        "Credenciales de acceso - RENT CAR",
+        "Credenciales de acceso - GESTION CONFERENCIAS",
         `
-            <h1>RENT CAR</h1>
+            <h1>GESTION CONFERENCIAS :)</h1>
             <p>¡Bienvenido ${nombre}!</p>
             <p>Tu cuenta ha sido creada exitosamente. Aquí están tus credenciales para acceder al sistema:</p>
             <hr>
@@ -31,12 +31,12 @@ const sendMailToNewClient = (userMail, nombre, email, password) => {
             <p><strong>Contraseña:</strong> ${password}</p>
             <hr>
             <p>Por favor, guarda estas credenciales en un lugar seguro.</p>
-            <footer>RENT CAR 2026. Todos los derechos reservados.</footer>
+            <footer>2026. Todos los derechos reservados.</footer>
         `
         )
 }
 
 export {
     sendMailToRecoveryPassword,
-    sendMailToNewClient
+    sendMailToNewConferencista
 }
