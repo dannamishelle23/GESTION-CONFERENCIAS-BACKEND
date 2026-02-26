@@ -1,8 +1,8 @@
 import Reservas from '../models/Reservas.js';
-import Clientes from '../models/Cliente.js';
+import Clientes from '../models/Conferencista.js';
 import Vehiculos from '../models/Vehiculos.js';
 import mongoose from 'mongoose';
-import { generarCodigoReserva } from '../helpers/generateCode.js';
+//import { generarCodigoReserva } from '../helpers/generateCode.js';
 
 //1. Crear reserva
 const crearReserva = async(req,res) => {

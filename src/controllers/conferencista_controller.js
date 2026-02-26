@@ -1,4 +1,4 @@
-import Cliente from '../models/Cliente.js';
+import Cliente from '../models/Conferencista.js';
 import Usuarios from '../models/Usuarios.js';
 import mongoose from 'mongoose';
 import {sendMailToNewClient} from '../helpers/sendMail.js';

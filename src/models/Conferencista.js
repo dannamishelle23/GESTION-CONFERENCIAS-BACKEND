@@ -1,11 +1,16 @@
 import {Schema, model} from 'mongoose';
 
-const ClienteSchema = new Schema({
+const ConferencistaSchema = new Schema({
     cedula: {
         type: String,
         required: true,
         trim: true,
         unique: true 
+    },
+    genero: {
+        type: String,
+        required: true,
+        enum: ['Masculino', 'Femenino', 'Otro']
     },
     fecha_nacimiento: {
         type: Date,
@@ -26,16 +31,21 @@ const ClienteSchema = new Schema({
         required: true,
         trim: true
     },
-    fechaIngresoEstudiante:{
+    empresa: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    fechaIngresoConferencista:{
         type:Date,
         required:true,
         default:Date.now
     },
-    fechaEliminacionCliente:{
+    fechaEliminacionConferencista:{
         type:Date,
         default:null
     },
-    estadoCliente:{
+    estadoConferencista:{
         type:String,
         enum: ['Activo', 'Inactivo'],
         default: 'Activo'
@@ -54,4 +64,4 @@ const ClienteSchema = new Schema({
     timestamps: true
 })
 
-export default model('Clientes', ClienteSchema);
+export default model('Conferencistas', ConferencistaSchema);

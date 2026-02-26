@@ -3,7 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import routerUsuarios from './routers/usuario_routes.js';
-import routerClientes from './routers/cliente_routes.js';
+import routerConferencistas from './routers/conferencista_routes.js';
 import routerVehiculos from './routers/vehiculo_routes.js';
 import routerReservas from './routers/reservas_routes.js';
 
@@ -27,7 +27,7 @@ app.get('/', (req, res) => res.send('Server on'));
 app.use('/api', routerUsuarios);
 
 //Rutas para clientes
-app.use('/api', routerClientes);
+app.use('/api', routerConferencistas);
 
 //Rutas para vehiculos
 app.use('/api', routerVehiculos);

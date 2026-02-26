@@ -2,6 +2,51 @@ import Usuarios from '../models/Usuarios.js';
 import {sendMailToRecoveryPassword} from '../helpers/sendMail.js';
 import {crearTokenJWT} from '../middlewares/JWT.js';
 
+//Inicio de sesion
+const loginUsuario = async (req, res) => {
+  try {
+    const { email, password } = req.body
+
+    if (!email || !password)
+      return res.status(400).json({ message: "Todos los campos son obligatorios." })
+
+    const usuarioBDD = await Usuarios
+      .findOne({ email })
+      .select("-status -__v -token -updatedAt")
+
+    //Validar que el usuario exista
+    if (!usuarioBDD)
+      return res.status(400).json({ message: "Usuario o contraseña incorrectos." })
+
+    const verificarPassword = await usuarioBDD.matchPassword(password)
+
+    //Validar que la contraseña sea correcta
+    if (!verificarPassword)
+      return res.status(400).json({ message: "Usuario o contraseña incorrectos." })
+
+    const { nombre, apellido, rol } = usuarioBDD
+    const token = crearTokenJWT(usuarioBDD._id, usuarioBDD.rol)
+
+    //Devolver los siguientes campos al usuario en caso de que el login sea exitoso
+    res.status(200).json({
+      message: "Inicio de sesión exitoso.",
+      usuario: {
+        token,
+        nombre,
+        apellido,
+        email: usuarioBDD.email,
+        rol
+      }
+    })
+
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({
+      message: `Error al procesar la solicitud - ${error}`
+    })
+  }
+}
+
 /*
 //Registro de usuarios
 const registroUsuarios = async(req,res) => {
@@ -77,51 +122,6 @@ const crearNuevoPassword = async (req,res) => {
         console.error(error);
         res.status(500).json({message: `Error al procesar la solicitud - ${error}`})
     }
-}
-
-//Inicio de sesion
-const loginUsuario = async (req, res) => {
-  try {
-    const { email, password } = req.body
-
-    if (!email || !password)
-      return res.status(400).json({ message: "Todos los campos son obligatorios." })
-
-    const usuarioBDD = await Usuarios
-      .findOne({ email })
-      .select("-status -__v -token -updatedAt")
-
-    //Validar que el usuario exista
-    if (!usuarioBDD)
-      return res.status(400).json({ message: "Usuario o contraseña incorrectos." })
-
-    const verificarPassword = await usuarioBDD.matchPassword(password)
-
-    //Validar que la contraseña sea correcta
-    if (!verificarPassword)
-      return res.status(400).json({ message: "Usuario o contraseña incorrectos." })
-
-    const { nombre, apellido, rol } = usuarioBDD
-    const token = crearTokenJWT(usuarioBDD._id, usuarioBDD.rol)
-
-    //Devolver los siguientes campos al usuario en caso de que el login sea exitoso
-    res.status(200).json({
-      message: "Inicio de sesión exitoso.",
-      usuario: {
-        token,
-        nombre,
-        apellido,
-        email: usuarioBDD.email,
-        rol
-      }
-    })
-
-  } catch (error) {
-    console.error(error)
-    res.status(500).json({
-      message: `Error al procesar la solicitud - ${error}`
-    })
-  }
 }
 
 //Visualizar el perfil

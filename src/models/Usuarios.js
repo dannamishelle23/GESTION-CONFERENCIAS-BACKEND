@@ -32,7 +32,7 @@ const UsuarioSchema = new Schema({
     },
     rol: {
         type: String,
-        enum : ['Admin', 'Estudiante'],
+        enum : ['Admin', 'Conferencista'],
         default: 'Admin',
     }
 }, {

@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import { crearCliente, listarClientes, detalleCliente, actualizarCliente, eliminarCliente } from '../controllers/cliente_controller.js';
+import { crearCliente, listarClientes, detalleCliente, actualizarCliente, eliminarCliente } from '../controllers/conferencista_controller.js';
 import { verificarTokenJWT, autorizarAdmin } from '../middlewares/JWT.js';
 
 const router = Router();
