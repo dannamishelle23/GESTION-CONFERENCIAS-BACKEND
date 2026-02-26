@@ -1,4 +1,5 @@
 import Auditorios from '../models/Auditorios.js';
+import Reservas from '../models/Reservas.js'
 import mongoose from 'mongoose';
 import { generarCodigoAuditorio } from '../helpers/generateCode.js';
 
@@ -8,7 +9,7 @@ const crearAuditorios = async (req, res) => {
     try {
         const { nombre, ubicacion, capacidad, descripcion } = req.body;
 
-        // validación básica de campos obligatorios
+        // Validación básica de campos obligatorios
         if (!nombre || !ubicacion || !capacidad) {
             return res.status(400).json({
                 message: "Todos los campos son obligatorios."
@@ -26,25 +27,26 @@ const crearAuditorios = async (req, res) => {
             nombre,
             ubicacion,
             capacidad,
-            descripcion,
+            descripcion: descripcion || null,        //opcional
             estadoAuditorio: true
         });
 
-        await nuevoAuditorio.save();
+        const auditorioGuardado = await nuevoAuditorio.save();
 
+        //Devolver el documento recién guardado
         return res.status(201).json({
             message: "Auditorio creado con éxito.",
-            auditorio: nuevoAuditorio
+            auditorio: auditorioGuardado
         });
     } catch (error) {
         if (error.code === 11000) {
-            // aunque debería haberse evitado por el bucle, capturamos cualquier duplicado inesperado
+            const duplicatedField = Object.keys(error.keyPattern)[0];
             return res.status(400).json({
-                message: "El auditorio ya existe."
+                message: `El campo '${duplicatedField}' ya está registrado.`
             });
         }
 
-        console.log(error);
+        console.error(error);
         return res.status(500).json({
             message: "Error al agregar auditorio"
         });
@@ -163,9 +165,9 @@ const actualizarAuditorio = async (req, res) => {
 //Dar de baja varios auditorios por su codigo respectivo
 const eliminarAuditorios = async (req, res) => {
     try {
-        const { codigo, fechaEliminacionauditorio } = req.body;
+        const { codigo, fechaEliminacionAuditorio } = req.body;
 
-        if (!codigo || !fechaEliminacionauditorio) {
+        if (!codigo || !fechaEliminacionAuditorio) {
             return res.status(400).json({
                 msg: "Debes enviar código y fecha de eliminación de forma obligatoria."
             });
@@ -181,13 +183,13 @@ const eliminarAuditorios = async (req, res) => {
         }
 
         //Verificar si hay reservas activas para el auditorio antes de eliminar
-        const auditoriosActivos = await Auditorios.findOne({ 
+        const reservasActivas = await Reservas.findOne({ 
             auditorioID: auditorio._id,
-            estadoAuditorio: true
+            estadoReserva: true
         });
 
         //No eliminar el auditorio si tiene reservas activas
-        if (auditoriosActivos) {
+        if (reservasActivas) {
             return res.status(400).json({
                 msg: "No se puede eliminar el auditorio porque tiene reservas activas."
             });
@@ -195,7 +197,7 @@ const eliminarAuditorios = async (req, res) => {
 
         //Dar de baja el auditorio
         auditorio.estadoAuditorio = false;
-        auditorio.fechaEliminacionAuditorio = new Date(fechaEliminacionauditorio);
+        auditorio.fechaEliminacionAuditorio = new Date(fechaEliminacionAuditorio);
 
         await auditorio.save();
 

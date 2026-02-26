@@ -1,14 +1,14 @@
 import Conferencista from '../models/Conferencista.js';
 import Usuarios from '../models/Usuarios.js';
 import mongoose from 'mongoose';
-import {sendMailToNewClient} from '../helpers/sendMail.js';
+import {sendMailToNewConferencista} from '../helpers/sendMail.js';
 
 //CRUD de conferencistas por medio de un usuario
 
 //1. CREAR CONFERENCISTAS
 const crearConferencistas = async(req,res) => {
     try {
-        const {nombre, apellido, email, cedula, genero, fecha_nacimiento, ciudad, direccion, telefono} = req.body
+        const {nombre, apellido, email, cedula, genero, fecha_nacimiento, ciudad, direccion, telefono, empresa} = req.body
         if (Object.values(req.body).includes("")) return res.status(400).json({message: "Todos los campos son obligatorios."})
         if (cedula.length < 7 || cedula.length > 10) return res.status(400).json({message: "La cédula debe tener entre 7 y 10 dígitos."})
         //1. Verificar si el email y la cédula existen en la BDD
@@ -52,6 +52,7 @@ const crearConferencistas = async(req,res) => {
             ciudad,
             direccion,
             telefono,
+            empresa,
             usuario: usuarioGuardado._id,
             creadoPor: req.usuarioHeader._id
         })
@@ -101,7 +102,8 @@ const listarConferencistas = async (req, res) => {
         .populate("creadoPor", "nombre apellido email rol");
 
         //Transformar la respuesta
-        const resultado = clientes.map(est => ({
+        const resultado = conferencistas.map(est => ({
+            _id: est._id,               // <-- incluir ID de la colección conferencista
             nombre: est.usuario?.nombre,
             apellido: est.usuario?.apellido,
             cedula: est.cedula,
@@ -110,6 +112,7 @@ const listarConferencistas = async (req, res) => {
             direccion: est.ciudad, 
             telefono: est.telefono,
             email: est.usuario?.email,
+            empresa: est.usuario?.empresa,
             rol: est.usuario?.rol,
             estadoConferencista: est.estadoConferencista,
             creadoPor: {
@@ -120,7 +123,7 @@ const listarConferencistas = async (req, res) => {
             }
         }));
 
-        res.status(200).json(resultado);
+        res.status(200).json({msg: "Datos obtenidos con éxito", resultado});
 
     } catch (error) {
         console.error(error);
@@ -167,15 +170,15 @@ const detalleConferencista = async (req, res) => {
             rol: conferencista.usuario?.rol,
             estadoConferencista: conferencista.estadoConferencista,
             creadoPor: {
-                id: cliente.creadoPor?._id,
-                nombre: cliente.creadoPor?.nombre,
-                apellido: cliente.creadoPor?.apellido,
-                email: cliente.creadoPor?.email,
-                rol: cliente.creadoPor?.rol
+                id: conferencista.creadoPor?._id,
+                nombre: conferencista.creadoPor?.nombre,
+                apellido: conferencista.creadoPor?.apellido,
+                email: conferencista.creadoPor?.email,
+                rol: conferencista.creadoPor?.rol
             }
         };
 
-        res.status(200).json(resultado);
+        res.status(200).json({msg: "Detalle del conferencista obtenido con éxito.", resultado});
 
     } catch (error) {
         console.error(error);
@@ -191,7 +194,15 @@ const actualizarConferencista = async (req, res) => {
 
         const { id } = req.params;
 
-        //Verificar que el usuario exista en la BDD
+        // Validar que los campos enviados en el body no estén vacíos
+        if (Object.values(req.body).some(valor => typeof valor === 'string' && valor.trim() === '')) {
+            return res.status(400).json({
+                msg: "Los campos que envíes no pueden estar vacíos."
+            });
+        }
+
+        // Campos permitidos del conferencista
+        const {nombre, apellido,cedula,ciudad,direccion, telefono, estadoConferencista, email} = req.body;
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(404).json({
                 msg: `No existe el conferencista ${id}`
@@ -205,9 +216,6 @@ const actualizarConferencista = async (req, res) => {
                 msg: "Conferencista no encontrado"
             });
         }
-
-        // Campos permitidos del conferencista
-        const {nombre, apellido,cedula,ciudad,direccion, telefono, estadoConferencista, email} = req.body;
 
         // Validar cédula duplicada si se intenta cambiar
         if (cedula && cedula !== conferencista.cedula) {
@@ -229,7 +237,7 @@ const actualizarConferencista = async (req, res) => {
             }
         }
 
-        // Actualizar datos del estudiante
+        // Actualizar datos del conferencista
         if (cedula) conferencista.cedula = cedula;
         if (ciudad) conferencista.ciudad = ciudad;
         if (direccion) conferencista.direccion = direccion;

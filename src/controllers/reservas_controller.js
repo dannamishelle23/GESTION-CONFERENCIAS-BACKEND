@@ -1,105 +1,106 @@
 import Reservas from '../models/Reservas.js';
 import Conferencistas from '../models/Conferencista.js';
-import auditorios from '../models/Auditorios.js';
+import Auditorios from '../models/Auditorios.js';
 import mongoose from 'mongoose';
 import { generarCodigoReserva } from '../helpers/generateCode.js';
 
 //1. Crear reserva
-const crearReserva = async(req,res) => {
-    try {
-        const { auditorioId } = req.body;
-        
-        if (!auditorioId) {
-            return res.status(400).json({
-                message: "El campo auditorioId es obligatorio."
-            });
+const crearReserva = async (req, res) => {
+  try {
+    const { auditorioId } = req.body;
+
+    if (!auditorioId) {
+      return res.status(400).json({
+        message: "El campo auditorioId es obligatorio."
+      });
+    }
+
+    // Usuario autenticado desde el token
+    const usuarioActual = req.usuarioHeader;
+    const conferencista = await Conferencistas.findOne({ usuario: usuarioActual._id });
+
+    if (!conferencista) {
+      return res.status(404).json({
+        message: "Conferencista no encontrado para este usuario."
+      });
+    }
+
+    const conferencistaId = conferencista._id;
+
+    // Verificar que el auditorio exista
+    const auditorio = await Auditorios.findById(auditorioId);
+    if (!auditorio) {
+      return res.status(404).json({
+        message: "No existe el auditorio con el ID proporcionado."
+      });
+    }
+
+    // Verificar que el auditorio esté disponible
+    if (auditorio.estadoAuditorio === false) {
+      return res.status(400).json({
+        message: "No se puede reservar un auditorio deshabilitado."
+      });
+    }
+
+    // Verificar que el conferencista no tenga una reserva activa
+    const reservaExistente = await Reservas.findOne({
+      conferencistaID: conferencistaId,
+      estadoReserva: true
+    });
+    if (reservaExistente) {
+      return res.status(400).json({
+        message: "Ya tienes una reserva activa."
+      });
+    }
+
+    // Crear nueva reserva
+    const nuevaReserva = new Reservas({
+      codigo: generarCodigoReserva(),
+      conferencistaID: conferencistaId,
+      auditorioID: auditorioId,
+      estadoReserva: true
+    });
+
+    await nuevaReserva.save();
+
+    // Poblar conferencista y auditorio
+    const reservaConDetalles = await Reservas.findById(nuevaReserva._id)
+      .populate({
+        path: 'conferencistaID',
+        select: 'cedula usuario',
+        populate: {
+          path: 'usuario',
+          select: 'nombre apellido'
         }
+      })
+      .populate('auditorioID', 'nombre ubicacion capacidad estadoAuditorio');
 
-        // Obtener el clienteID del usuario autenticado (del token)
-        const usuarioActual = req.usuarioHeader;
-        const conferencista = await Conferencistas.findOne({ usuario: usuarioActual._id });
-        
-        if (!conferencista) {
-            return res.status(404).json({
-                message: "Conferencista no encontrado para este usuario."
-            });
+    return res.status(201).json({
+      message: "Reserva creada con éxito",
+      reserva: {
+        _id: reservaConDetalles._id,
+        codigo: reservaConDetalles.codigo,
+        fecha: reservaConDetalles.fechaReserva,
+        conferencista: {
+          _id: reservaConDetalles.conferencistaID._id,
+          cedula: reservaConDetalles.conferencistaID.cedula,
+          nombre: `${reservaConDetalles.conferencistaID.usuario.nombre} ${reservaConDetalles.conferencistaID.usuario.apellido}`
+        },
+        auditorio: {
+          _id: reservaConDetalles.auditorioID._id,
+          nombre: reservaConDetalles.auditorioID.nombre,
+          ubicacion: reservaConDetalles.auditorioID.ubicacion,
+          capacidad: reservaConDetalles.auditorioID.capacidad
         }
-
-        const conferencistaId = conferencista._id;
-
-        // Verificar si el vehículo existe
-        const auditorio = await auditorios.findById(auditorioId);
-        if (!auditorio) {
-            return res.status(404).json({
-                message: "No existe el auditorio con el ID proporcionado."
-            });
-        }
-
-        //Verificar que el auditorio esté disponible
-        if (auditorio.estadoAuditorio === false) {
-            return res.status(400).json({
-                message: "No se puede reservar un auditorio deshabilitado."
-            });
-        }
-
-        //Verificar que el conferencista ya no tenga una reserva activa
-        const reservaExistente = await Reservas.findOne({ 
-            conferencistaID: conferencistaId, 
-            estadoReserva: true
-        });
-        if (reservaExistente) {
-            return res.status(400).json({
-                message: "Ya tienes una reserva activa."
-            });
-        }
-
-        const nuevaReserva = new Reservas({
-            codigo: generarCodigoReserva(),
-            clienteID: clienteId,
-            auditorioID: auditorioId,
-            estadoReserva: true
-        });
-
-        await nuevaReserva.save();
-
-        // Poblar los datos del vehículo y cliente para devolver en la respuesta
-        const reservaConDetalles = await Reservas.findById(nuevaReserva._id)
-            .populate({
-                path: 'clienteID',
-                select: 'cedula usuario',
-                populate: {
-                    path: 'usuario',
-                    select: 'nombre apellido'
-                }
-            })
-            .populate('auditorioID', 'marca modelo año estadoauditorio');
-
-        return res.status(201).json({
-            message: "Reserva creada con éxito",
-            reserva: {
-                _id: reservaConDetalles._id,
-                codigo: reservaConDetalles.codigo,
-                fecha: reservaConDetalles.fechaReserva,
-                cliente: {
-                    _id: reservaConDetalles.clienteID._id,
-                    cedula: reservaConDetalles.clienteID.cedula,
-                    nombre: `${reservaConDetalles.clienteID.usuario.nombre} ${reservaConDetalles.clienteID.usuario.apellido}`
-                },
-                auditorio: {
-                    _id: reservaConDetalles.auditorioID._id,
-                    marca: reservaConDetalles.auditorioID.marca,
-                    modelo: reservaConDetalles.auditorioID.modelo,
-                    año: reservaConDetalles.auditorioID.año
-                }
-            }
-        });
-    } catch (error) {
-        console.error("Error al crear reserva:", error);
-        return res.status(500).json({
-            message: "Error al crear la reserva."
-        });
-    }   
-}
+      }
+    });
+  } catch (error) {
+    console.error("Error al crear reserva:", error);
+    return res.status(500).json({
+      message: "Error al crear la reserva."
+    });
+  }
+};
 
 //Listar reservas con detalles de cliente y vehículo
 const listarReservas = async(req,res) => {
@@ -107,28 +108,28 @@ const listarReservas = async(req,res) => {
         const usuarioActual = req.usuarioHeader;
         let filtro = {};
 
-        // Si es estudiante, solo ve sus propias reservas
-        if (usuarioActual.rol === "Cliente") {
-            const cliente = await Clientes.findOne({ usuario: usuarioActual._id });
-            if (!cliente) {
+        // Si es conferencista, solo ve sus propias reservas
+        if (usuarioActual.rol === "Conferencista") {
+            const conferencista = await Conferencistas.findOne({ usuario: usuarioActual._id });
+            if (!conferencista) {
                 return res.status(404).json({
-                    message: "Cliente no encontrado."
+                    message: "Conferencista no encontrado."
                 });
             }
-            filtro = { clienteID: cliente._id };
+            filtro = { conferencistaID: conferencista._id };
         }
         // Si es admin, ve todas las reservas
 
         const reservas = await Reservas.find(filtro)
             .populate({
-                path: 'clienteID',
+                path: 'conferencistaID',
                 select: 'cedula usuario',
                 populate: {
                     path: 'usuario',
                     select: 'nombre apellido'
                 }
             })
-            .populate('auditorioID', 'marca modelo año estadoauditorio');
+            .populate('auditorioId', 'nombre ubicacion capacidad estadoAuditorio');
             
         res.status(200).json({
             message: "Reservas obtenidas con éxito.",
@@ -155,14 +156,14 @@ const detalleReserva = async(req,res) => {
 
         const reserva = await Reservas.findById(id)
             .populate({
-                path: 'clienteID',
+                path: 'conferencistaID',
                 select: 'cedula usuario',
                 populate: {
                     path: 'usuario',
                     select: 'nombre apellido'
                 }
             })
-            .populate('auditorioID', 'marca modelo año estadoauditorio');     
+            .populate('auditorioID', 'nombre ubicacion capacidad estadoAuditorio');     
         
         if (!reserva) {
             return res.status(404).json({
@@ -170,10 +171,10 @@ const detalleReserva = async(req,res) => {
             });
         }
 
-        // Validar que el estudiante solo vea sus propias reservas
-        if (usuarioActual.rol === "Estudiante") {
-            const estudiante = await Estudiantes.findOne({ usuario: usuarioActual._id });
-            if (!estudiante || reserva.clienteID._id.toString() !== estudiante._id.toString()) {
+        // Validar que el conferencista solo vea sus propias reservas
+        if (usuarioActual.rol === "Conferencista") {
+            const conferencista = await Conferencistas.findOne({ usuario: usuarioActual._id });
+            if (!conferencista || reserva.conferencistaID._id.toString() !== conferencista._id.toString()) {
                 return res.status(403).json({
                     message: "No tienes permiso para ver esta reserva."
                 });

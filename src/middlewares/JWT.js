@@ -42,7 +42,7 @@ const verificarTokenJWT = async (req, res, next) => {
     req.usuarioHeader = usuarioBDD
 
     // Validar que el rol sea válido
-    if (rol !== "Admin" && rol !== "Estudiante") {
+    if (rol !== "Admin" && rol !== "Conferencista") {
       return res.status(403).json({
         message: "Acceso denegado. No tienes permisos."
       })

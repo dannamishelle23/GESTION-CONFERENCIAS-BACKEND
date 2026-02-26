@@ -14,19 +14,15 @@ const auditorioSchema = new Schema({
   ubicacion: {
     type: String,
     required: true,
-    unique: true,
     trim: true,
   },
   capacidad: {
     type: String,
     required: true,
-    unique: true,
     trim: true,
   },
   descripcion: {
     type: String,
-    required: true,
-    unique: true,
     trim: true,
   },
   fechaEliminacionAuditorio: {
