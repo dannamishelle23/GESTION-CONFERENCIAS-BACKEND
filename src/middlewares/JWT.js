@@ -68,19 +68,19 @@ const autorizarAdmin = (req, res, next) => {
   next()
 }
 
-// Middleware para validar que el usuario sea Cliente
-const autorizarCliente = (req, res, next) => {
-  if (req.usuarioHeader.rol !== "Cliente") {
+// Middleware para validar que el usuario sea conferencista
+const autorizarConferencista = (req, res, next) => {
+  if (req.usuarioHeader.rol !== "Conferencista") {
     return res.status(403).json({
-      message: "Acceso denegado. Solo clientes pueden realizar esta acción."
+      message: "Acceso denegado. Solo conferencistas pueden realizar esta acción."
     })
   }
   next()
 }
 
-// Middleware para validar que el admin o cliente vean las matrículas 
-const autorizarAdminOCliente = (req, res, next) => {
-  if (req.usuarioHeader.rol !== "Admin" && req.usuarioHeader.rol !== "Cliente") {
+// Middleware para validar que el admin o conferencista vean los auditorios 
+const autorizarAdminOConferencista = (req, res, next) => {
+  if (req.usuarioHeader.rol !== "Admin" && req.usuarioHeader.rol !== "Conferencista") {
     return res.status(403).json({
       message: "Acceso denegado. Debes tener un rol válido."
     })
@@ -88,11 +88,11 @@ const autorizarAdminOCliente = (req, res, next) => {
   next()
 }
 
-// Middleware para que Admin y Cliente puedan leer materias, solo el admin puede modificar
-const autorizarAdminOClienteLectura = (req, res, next) => {
-  if (req.usuarioHeader.rol !== "Admin" && req.usuarioHeader.rol !== "Cliente") {
+// Middleware para que Admin y Conferencista puedan leer auditorios, solo el admin puede modificar
+const autorizarAdminOConferencistaLectura = (req, res, next) => {
+  if (req.usuarioHeader.rol !== "Admin" && req.usuarioHeader.rol !== "Conferencista") {
     return res.status(403).json({
-      message: "Acceso denegado. Debes tener un rol válido para consultar materias."
+      message: "Acceso denegado. Debes tener un rol válido para consultar auditorios."
     })
   }
   next()
@@ -102,7 +102,7 @@ export {
     crearTokenJWT,
     verificarTokenJWT,
     autorizarAdmin,
-    autorizarCliente,
-    autorizarAdminOCliente,
-    autorizarAdminOClienteLectura
+    autorizarConferencista,
+    autorizarAdminOConferencista,
+    autorizarAdminOConferencistaLectura
 }

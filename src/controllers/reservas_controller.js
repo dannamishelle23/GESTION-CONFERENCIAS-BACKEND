@@ -1,50 +1,50 @@
 import Reservas from '../models/Reservas.js';
-import Clientes from '../models/Conferencista.js';
-import Vehiculos from '../models/Vehiculos.js';
+import Conferencistas from '../models/Conferencista.js';
+import auditorios from '../models/Auditorios.js';
 import mongoose from 'mongoose';
-//import { generarCodigoReserva } from '../helpers/generateCode.js';
+import { generarCodigoReserva } from '../helpers/generateCode.js';
 
 //1. Crear reserva
 const crearReserva = async(req,res) => {
     try {
-        const { vehiculoId } = req.body;
+        const { auditorioId } = req.body;
         
-        if (!vehiculoId) {
+        if (!auditorioId) {
             return res.status(400).json({
-                message: "El campo vehiculoId es obligatorio."
+                message: "El campo auditorioId es obligatorio."
             });
         }
 
         // Obtener el clienteID del usuario autenticado (del token)
         const usuarioActual = req.usuarioHeader;
-        const cliente = await Clientes.findOne({ usuario: usuarioActual._id });
+        const conferencista = await Conferencistas.findOne({ usuario: usuarioActual._id });
         
-        if (!cliente) {
+        if (!conferencista) {
             return res.status(404).json({
-                message: "Cliente no encontrado para este usuario."
+                message: "Conferencista no encontrado para este usuario."
             });
         }
 
-        const clienteId = cliente._id;
+        const conferencistaId = conferencista._id;
 
         // Verificar si el vehículo existe
-        const vehiculo = await Vehiculos.findById(vehiculoId);
-        if (!vehiculo) {
+        const auditorio = await auditorios.findById(auditorioId);
+        if (!auditorio) {
             return res.status(404).json({
-                message: "No existe el vehículo con el ID proporcionado."
+                message: "No existe el auditorio con el ID proporcionado."
             });
         }
 
-        //Verificar que el vehículo esté disponible
-        if (vehiculo.estadoVehiculo === false) {
+        //Verificar que el auditorio esté disponible
+        if (auditorio.estadoAuditorio === false) {
             return res.status(400).json({
-                message: "No se puede reservar un vehículo deshabilitado."
+                message: "No se puede reservar un auditorio deshabilitado."
             });
         }
 
-        //Verificar que el cliente ya no tenga una reserva activa
+        //Verificar que el conferencista ya no tenga una reserva activa
         const reservaExistente = await Reservas.findOne({ 
-            clienteID: clienteId, 
+            conferencistaID: conferencistaId, 
             estadoReserva: true
         });
         if (reservaExistente) {
@@ -56,7 +56,7 @@ const crearReserva = async(req,res) => {
         const nuevaReserva = new Reservas({
             codigo: generarCodigoReserva(),
             clienteID: clienteId,
-            vehiculoID: vehiculoId,
+            auditorioID: auditorioId,
             estadoReserva: true
         });
 
@@ -72,7 +72,7 @@ const crearReserva = async(req,res) => {
                     select: 'nombre apellido'
                 }
             })
-            .populate('vehiculoID', 'marca modelo año estadoVehiculo');
+            .populate('auditorioID', 'marca modelo año estadoauditorio');
 
         return res.status(201).json({
             message: "Reserva creada con éxito",
@@ -85,11 +85,11 @@ const crearReserva = async(req,res) => {
                     cedula: reservaConDetalles.clienteID.cedula,
                     nombre: `${reservaConDetalles.clienteID.usuario.nombre} ${reservaConDetalles.clienteID.usuario.apellido}`
                 },
-                vehiculo: {
-                    _id: reservaConDetalles.vehiculoID._id,
-                    marca: reservaConDetalles.vehiculoID.marca,
-                    modelo: reservaConDetalles.vehiculoID.modelo,
-                    año: reservaConDetalles.vehiculoID.año
+                auditorio: {
+                    _id: reservaConDetalles.auditorioID._id,
+                    marca: reservaConDetalles.auditorioID.marca,
+                    modelo: reservaConDetalles.auditorioID.modelo,
+                    año: reservaConDetalles.auditorioID.año
                 }
             }
         });
@@ -128,7 +128,7 @@ const listarReservas = async(req,res) => {
                     select: 'nombre apellido'
                 }
             })
-            .populate('vehiculoID', 'marca modelo año estadoVehiculo');
+            .populate('auditorioID', 'marca modelo año estadoauditorio');
             
         res.status(200).json({
             message: "Reservas obtenidas con éxito.",
@@ -162,7 +162,7 @@ const detalleReserva = async(req,res) => {
                     select: 'nombre apellido'
                 }
             })
-            .populate('vehiculoID', 'marca modelo año estadoVehiculo');     
+            .populate('auditorioID', 'marca modelo año estadoauditorio');     
         
         if (!reserva) {
             return res.status(404).json({

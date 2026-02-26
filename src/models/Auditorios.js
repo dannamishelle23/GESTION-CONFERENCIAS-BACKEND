@@ -1,42 +1,23 @@
 import { Schema, model } from "mongoose";
 
-const vehiculoSchema = new Schema({
-  marca: {
+const auditorioSchema = new Schema({
+  codigo: {
+    type: String,
+    trim: true,
+    unique: true,
+  },
+  nombre: {
     type: String,
     required: true,
     trim: true,
   },
-  modelo: {
+  ubicacion: {
     type: String,
     required: true,
     unique: true,
     trim: true,
   },
-  anio_fabricacion: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-  },
-  placa: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-  },
-  color: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-  },
-  tipo_vehiculo: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-  },
-  kilometraje: {
+  capacidad: {
     type: String,
     required: true,
     unique: true,
@@ -44,13 +25,15 @@ const vehiculoSchema = new Schema({
   },
   descripcion: {
     type: String,
+    required: true,
+    unique: true,
     trim: true,
   },
-  fechaEliminacionVehiculo: {
+  fechaEliminacionAuditorio: {
     type: Date,
     default: null,
   },
-  estadoVehiculo: {
+  estadoAuditorio: {
     type: Boolean,
     default: true,
   }
@@ -58,4 +41,4 @@ const vehiculoSchema = new Schema({
   timestamps: true
 });
 
-export default model("Vehículos", vehiculoSchema);
+export default model("Auditorios", auditorioSchema);
