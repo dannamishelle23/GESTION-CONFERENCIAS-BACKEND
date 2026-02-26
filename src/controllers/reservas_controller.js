@@ -129,8 +129,15 @@ const listarReservas = async(req,res) => {
                     select: 'nombre apellido'
                 }
             })
-            .populate('auditorioId', 'nombre ubicacion capacidad estadoAuditorio');
-            
+            .populate('auditorioID', 'nombre ubicacion capacidad estadoAuditorio');
+
+        // Validación: si no hay reservas mostrar que no tiene reservas hechas
+        if (!reservas || reservas.length === 0) {
+        return res.status(200).json({
+            message: "No tienes reservas hechas actualmente.",
+        });
+        }
+
         res.status(200).json({
             message: "Reservas obtenidas con éxito.",
             total: reservas.length,
@@ -164,11 +171,17 @@ const detalleReserva = async(req,res) => {
                 }
             })
             .populate('auditorioID', 'nombre ubicacion capacidad estadoAuditorio');     
-        
+            
         if (!reserva) {
-            return res.status(404).json({
-                message: `No existe la reserva ${id}`
-            });
+        return res.status(404).json({
+            message: `No existe la reserva ${id}`
+        });
+        }
+        // Validar si la reserva está cancelada
+        if (reserva.estadoReserva === false) {
+        return res.status(400).json({
+            message: "La reserva está cancelada y no puede visualizarse."
+        });
         }
 
         // Validar que el conferencista solo vea sus propias reservas
@@ -192,67 +205,6 @@ const detalleReserva = async(req,res) => {
         });
     }
 }
-
-/*
-//Actualizar matrícula por id
-const actualizarMatricula = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { estadoMatricula } = req.body;
-        const usuarioActual = req.usuarioHeader;
-
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(404).json({
-                message: `No existe la matrícula ${id}`
-            });
-        }
-
-        const matricula = await Matriculas.findById(id);
-
-        if (!matricula) {
-            return res.status(404).json({ 
-                message: "Matrícula no encontrada" 
-            });
-        }
-
-        // Validar que el estudiante solo modifique sus propias matrículas
-        if (usuarioActual.rol === "Estudiante") {
-            const estudiante = await Estudiantes.findOne({ usuario: usuarioActual._id });
-            if (!estudiante || matricula.estudianteID.toString() !== estudiante._id.toString()) {
-                return res.status(403).json({
-                    message: "No tienes permiso para modificar esta matrícula."
-                });
-            }
-        }
-
-        // Solo permitir cambiar el estado de la matrícula
-        if (estadoMatricula !== undefined) {
-            matricula.estadoMatricula = estadoMatricula;
-        }
-
-        await matricula.save();
-
-        const matriculaActualizada = await Matriculas.findById(id)
-            .populate({
-                path: 'estudianteID',
-                select: 'cedula usuario',
-                populate: {
-                    path: 'usuario',
-                    select: 'nombre apellido'
-                }
-            })
-            .populate('materiaID', 'nombre codigo creditos');
-
-        res.status(200).json({
-            message: "Matrícula actualizada con éxito.",
-            matricula: matriculaActualizada
-        });
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ msg: "Error en el servidor" });
-    }
-};
-*/
 
 // Eliminar matrícula por id
 const eliminarReserva = async (req, res) => {
@@ -288,15 +240,14 @@ const eliminarReserva = async (req, res) => {
         }
 
         // Validar que el estudiante solo elimine sus propias reservas
-        if (usuarioActual.rol === "Cliente") {
-            const cliente = await Clientes.findOne({ usuario: usuarioActual._id });
-            if (!cliente || reserva.clienteID.toString() !== cliente._id.toString()) {
+        if (usuarioActual.rol === "Conferencista") {
+            const conferencista = await Conferencistas.findOne({ usuario: usuarioActual._id });
+            if (!conferencista || reserva.conferencistaID.toString() !== conferencista._id.toString()) {
                 return res.status(403).json({
                     message: "No tienes permiso para eliminar esta reserva."
                 });
             }
         }
-
         await reserva.deleteOne();
         res.status(200).json({ 
             message: "Reserva eliminada correctamente" 
