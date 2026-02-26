@@ -171,7 +171,7 @@ const detalleReserva = async(req,res) => {
                 }
             })
             .populate('auditorioID', 'nombre ubicacion capacidad estadoAuditorio');     
-            
+
         if (!reserva) {
         return res.status(404).json({
             message: `No existe la reserva ${id}`
@@ -205,6 +205,68 @@ const detalleReserva = async(req,res) => {
         });
     }
 }
+
+//Actualizar reserva por id
+const actualizarReserva = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { fechaReserva } = req.body;
+    const usuarioActual = req.usuarioHeader;
+
+    // Validar que se envíe la fecha
+    if (!fechaReserva) {
+      return res.status(400).json({
+        message: "El campo fechaReserva es obligatorio."
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({
+        message: `No existe la reserva ${id}`
+      });
+    }
+
+    const reserva = await Reservas.findById(id);
+    if (!reserva) {
+      return res.status(404).json({
+        message: "Reserva no encontrada"
+      });
+    }
+
+    // Validar que el auditorio asociado siga activo
+    const auditorio = await Auditorios.findById(reserva.auditorioID);
+    if (!auditorio || auditorio.estadoAuditorio === false) {
+      return res.status(400).json({
+        message: "No se puede actualizar la reserva porque el auditorio está deshabilitado o no existe."
+      });
+    }
+
+    // Validar que el conferencista solo actualice sus propias reservas
+    if (usuarioActual.rol === "Conferencista") {
+      const conferencista = await Conferencistas.findOne({ usuario: usuarioActual._id });
+      if (!conferencista || reserva.conferencistaID.toString() !== conferencista._id.toString()) {
+        return res.status(403).json({
+          message: "No tienes permiso para actualizar esta reserva."
+        });
+      }
+    }
+
+    // Actualizar la fecha de la reserva
+    reserva.fechaReserva = new Date(fechaReserva);
+    await reserva.save();
+
+    return res.status(200).json({
+      message: "Reserva actualizada con éxito.",
+      reserva
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Error en el servidor al actualizar la reserva."
+    });
+  }
+};
+
 
 // Eliminar matrícula por id
 const eliminarReserva = async (req, res) => {
@@ -262,6 +324,6 @@ export {
     crearReserva,
     listarReservas,
     detalleReserva,
-    //actualizarReserva,
+    actualizarReserva,
     eliminarReserva
 }

@@ -1,4 +1,4 @@
-import { crearReserva, listarReservas, detalleReserva, eliminarReserva } from "../controllers/reservas_controller.js";
+import { crearReserva, listarReservas, detalleReserva, actualizarReserva, eliminarReserva } from "../controllers/reservas_controller.js";
 import { Router } from 'express';
 import { verificarTokenJWT, autorizarConferencista, autorizarAdminOConferencista } from "../middlewares/JWT.js";
 
@@ -12,7 +12,7 @@ router.get('/reservas/listar-reservas', verificarTokenJWT, autorizarAdminOConfer
 //3. Visualizar el detalle de una reserva por ID - Admin y Cliente
 router.get('/reservas/detalle-reserva/:id', verificarTokenJWT, autorizarAdminOConferencista, detalleReserva)
 //4. Editar una reserva por ID - Solo clientes
-//router.put('/reservas/editar-reserva/:id', verificarTokenJWT, autorizarConferencista, actualizarReserva)
+router.put('/reservas/editar-reserva/:id', verificarTokenJWT, autorizarConferencista, actualizarReserva)
 //5. Eliminar reservas definitivamente - Solo clientes
 router.delete('/reservas/eliminar-reserva/:id', verificarTokenJWT, autorizarConferencista, eliminarReserva)
 
